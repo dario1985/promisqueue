@@ -22,6 +22,6 @@ setInterval(() => {
   const num = Math.floor(Math.random() * (50 - 1)) + 1;
   for (let i = 0; i < num; i++)
     setTimeout(() =>
-      q.push(() => new Promise(ok => setTimeout(() => ok(), num * 10))), num);
+      q.add(() => new Promise(ok => setTimeout(() => ok(), num * 10))), num);
   console.log('Stats: ', q.stats());
 }, 2000);

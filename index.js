@@ -28,12 +28,18 @@ class PromisQueue extends EventEmitter {
     return st.pending.length > st.highWatermark ? st.softLimit : st.limit;
   }
 
-  push(p) {
-    if (typeof p !== 'function' || p.length > 0)
-      throw new TypeError('Promise factory function expected.');
-
+  add(p) {
+    checkGenerator(p);
     this._state.pending.push(p);
     this._start();
+    return this.length;
+  }
+
+  prepend(p) {
+    checkGenerator(p);
+    this._state.pending.unshift(p);
+    this._start();
+    return this.length;
   }
 
   stats() {
@@ -44,13 +50,9 @@ class PromisQueue extends EventEmitter {
     const st = this._state, maxproc = this.currentConcurrency;
     this.emit('start');
     for (let p; st.pending.length > 0 && st.processing < maxproc; st.processing++) {
-      p = this._dequeue();
+      p = st.pending.shift();
       p().then(st.next).catch(st.next);
     }
-  }
-
-  _dequeue() {
-    return this._state.pending.shift();
   }
 }
 
@@ -65,4 +67,9 @@ class QueueState {
     this.processing = 0;
     this.processed = new measured.Meter();
   }
+}
+
+function checkGenerator(fn) {
+  if (typeof fn !== 'function' || fn.length > 0)
+    throw new TypeError('Promise factory function expected.');
 }
