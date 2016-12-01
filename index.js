@@ -9,14 +9,20 @@ class PromisQueue extends EventEmitter {
 
     this._state = new QueueState(options || {});
 
-    const st = this._state;
+    const st = this._state, _this = this;
 
     st.next = function () {
       st.processed.mark();
       st.processing--;
-      this.emit('done');
-      this._start();
-    }.bind(this);
+      if (!st.resuming) {
+        st.resuming = true;
+        process.nextTick(() => {
+          st.resuming = false;
+          _this.emit('next');
+          _this._start();
+        });
+      }
+    };
   }
 
   get length() {
@@ -48,10 +54,13 @@ class PromisQueue extends EventEmitter {
 
   _start() {
     const st = this._state, maxproc = this.currentConcurrency;
-    this.emit('start');
-    for (let p; st.pending.length > 0 && st.processing < maxproc; st.processing++) {
-      p = st.pending.shift();
-      p().then(st.next).catch(st.next);
+    if (st.pending.length) {
+      for (let p; st.pending.length > 0 && st.processing < maxproc; st.processing++) {
+        p = st.pending.shift()();
+        p.then(st.next).catch(st.next);
+        this.emit('start', p);
+      }
+      if (!st.pending.length) this.emit('drained');
     }
   }
 }

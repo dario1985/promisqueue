@@ -1,6 +1,6 @@
 {
   "name": "promisqueue",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "description": "Execute queue of promises with concurrency",
   "main": "index.js",
   "repository": {
