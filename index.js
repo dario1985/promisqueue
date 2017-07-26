@@ -56,7 +56,11 @@ class PromisQueue extends EventEmitter {
     const st = this._state, maxproc = this.currentConcurrency;
     if (st.pending.length) {
       for (let p; st.pending.length > 0 && st.processing < maxproc; st.processing++) {
-        p = st.pending.shift()();
+        try {
+          p = st.pending.shift()();
+        } catch (e) {
+          p = Promise.reject(e);
+        }
         p.then(st.next).catch(st.next);
         this.emit('start', p);
       }
